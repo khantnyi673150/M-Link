@@ -1,0 +1,364 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import '../../core/theme/app_theme.dart';
+import '../../models/shop_model.dart';
+import '../../models/menu_item.dart';
+import 'widgets/shop_image_carousel.dart';
+import 'widgets/shop_info_section.dart';
+
+class ShopDetailScreen extends StatelessWidget {
+  final Shop shop;
+
+  const ShopDetailScreen({
+    super.key,
+    required this.shop,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppTheme.background,
+      body: CustomScrollView(
+        slivers: [
+          // ── App Bar with transparent background ───────────────
+          SliverAppBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            pinned: false,
+            leading: Padding(
+              padding: const EdgeInsets.only(left: 8),
+              child: CircleAvatar(
+                backgroundColor: Colors.white.withValues(alpha: 0.9),
+                child: IconButton(
+                  icon: const Icon(Icons.arrow_back_rounded, size: 20),
+                  color: AppTheme.onBackground,
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
+              ),
+            ),
+          ),
+
+          // ── Content ────────────────────────────────────────────
+          SliverToBoxAdapter(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Image carousel
+                ShopImageCarousel(
+                  imageUrls: shop.imageUrls,
+                  height: 240,
+                ),
+                const SizedBox(height: 16),
+
+                // Shop info card
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: ShopInfoSection(
+                    name: shop.name,
+                    category: shop.category,
+                    rating: shop.rating,
+                    description: shop.description,
+                    location: shop.location,
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Price Range card
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: _PriceRangeCard(shop: shop),
+                ),
+                const SizedBox(height: 16),
+
+                // Menu section
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: _MenuSection(),
+                ),
+                const SizedBox(height: 16),
+
+                // Contact & Order section
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: _ContactSection(shop: shop),
+                ),
+                const SizedBox(height: 20),
+
+                // Get Directions button
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      // TODO: Open maps with shop location
+                      debugPrint('Get directions to: ${shop.location}');
+                    },
+                    icon: const Icon(Icons.navigation_rounded, size: 20),
+                    label: const Text('Get Directions'),
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Disclaimer
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: _DisclaimerText(),
+                ),
+                const SizedBox(height: 24),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Price Range card ──────────────────────────────────────────────
+class _PriceRangeCard extends StatelessWidget {
+  final Shop shop;
+  const _PriceRangeCard({required this.shop});
+
+  @override
+  Widget build(BuildContext context) {
+    final tt = Theme.of(context).textTheme;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.surface,
+        borderRadius: BorderRadius.circular(AppTheme.borderRadius),
+        border: Border.all(color: AppTheme.outline),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Price Range', style: tt.titleMedium),
+          const SizedBox(height: 8),
+          Text(
+            shop.priceRange,
+            style: tt.headlineSmall?.copyWith(
+              color: AppTheme.primary,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Student-friendly pricing',
+            style: tt.bodySmall?.copyWith(color: AppTheme.onSurfaceVariant),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Menu section ──────────────────────────────────────────────────
+class _MenuSection extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final tt = Theme.of(context).textTheme;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.surface,
+        borderRadius: BorderRadius.circular(AppTheme.borderRadius),
+        border: Border.all(color: AppTheme.outline),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Menu', style: tt.titleMedium),
+          const SizedBox(height: 12),
+          ...sampleMenuItems.map((item) => _MenuItemRow(item: item)),
+        ],
+      ),
+    );
+  }
+}
+
+class _MenuItemRow extends StatelessWidget {
+  final MenuItem item;
+  const _MenuItemRow({required this.item});
+
+  @override
+  Widget build(BuildContext context) {
+    final tt = Theme.of(context).textTheme;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(item.name, style: tt.titleSmall),
+                const SizedBox(height: 2),
+                Text(
+                  item.description,
+                  style: tt.bodySmall?.copyWith(
+                    color: AppTheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          Text(
+            '\$${item.price.toStringAsFixed(2)}',
+            style: tt.labelLarge?.copyWith(
+              color: AppTheme.primary,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Contact & Order section ───────────────────────────────────────
+class _ContactSection extends StatelessWidget {
+  final Shop shop;
+  const _ContactSection({required this.shop});
+
+  @override
+  Widget build(BuildContext context) {
+    final tt = Theme.of(context).textTheme;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.surface,
+        borderRadius: BorderRadius.circular(AppTheme.borderRadius),
+        border: Border.all(color: AppTheme.outline),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Contact & Order', style: tt.titleMedium),
+          const SizedBox(height: 12),
+          _ContactRow(
+            icon: Icons.phone_rounded,
+            iconColor: AppTheme.primary,
+            label: 'Phone',
+            value: shop.phone,
+            onTap: () {
+              Clipboard.setData(ClipboardData(text: shop.phone));
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Phone number copied')),
+              );
+            },
+          ),
+          _ContactRow(
+            icon: Icons.facebook_rounded,
+            iconColor: const Color(0xFF1877F2),
+            label: 'Facebook',
+            value: 'Visit our page',
+            onTap: () => debugPrint('Open Facebook'),
+          ),
+          _ContactRow(
+            icon: Icons.chat_bubble_rounded,
+            iconColor: const Color(0xFF0084FF),
+            label: 'Messenger',
+            value: 'Chat with us',
+            onTap: () => debugPrint('Open Messenger'),
+          ),
+          _ContactRow(
+            icon: Icons.chat_rounded,
+            iconColor: const Color(0xFF00B900),
+            label: 'Line',
+            value: 'Message us',
+            onTap: () => debugPrint('Open Line'),
+          ),
+          _ContactRow(
+            icon: Icons.camera_alt_rounded,
+            iconColor: const Color(0xFFE4405F),
+            label: 'Instagram',
+            value: 'Follow us',
+            onTap: () => debugPrint('Open Instagram'),
+            isLast: true,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ContactRow extends StatelessWidget {
+  final IconData icon;
+  final Color iconColor;
+  final String label;
+  final String value;
+  final VoidCallback onTap;
+  final bool isLast;
+
+  const _ContactRow({
+    required this.icon,
+    required this.iconColor,
+    required this.label,
+    required this.value,
+    required this.onTap,
+    this.isLast = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final tt = Theme.of(context).textTheme;
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: EdgeInsets.only(bottom: isLast ? 0 : 12),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: iconColor.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(icon, color: iconColor, size: 20),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: tt.bodySmall?.copyWith(
+                      color: AppTheme.onSurfaceVariant,
+                    ),
+                  ),
+                  Text(value, style: tt.titleSmall),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Disclaimer text ───────────────────────────────────────────────
+class _DisclaimerText extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final tt = Theme.of(context).textTheme;
+
+    return Text(
+      'This information is provided by the merchant. Please verify details before visiting.',
+      style: tt.bodySmall?.copyWith(
+        color: AppTheme.onSurfaceVariant,
+        fontStyle: FontStyle.italic,
+      ),
+      textAlign: TextAlign.center,
+    );
+  }
+}
