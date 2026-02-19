@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/utils/responsive.dart';
 import '../../models/mock_shops.dart';
 import '../category/category_shop_list_screen.dart';
 import '../home/widgets/category_card.dart';
@@ -95,57 +96,63 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final tt = Theme.of(context).textTheme;
     final filtered = _filteredCategories;
+    final horizontalPadding = Responsive.horizontalPadding(context);
 
     return Scaffold(
       backgroundColor: AppTheme.background,
       appBar: _buildAppBar(context),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // ── Search Bar ──────────────────────────────────────────
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-            child: TextField(
-              controller: _searchController,
-              onChanged: (v) => setState(() => _searchQuery = v),
-              style: tt.bodyMedium?.copyWith(color: AppTheme.onBackground),
-              decoration: InputDecoration(
-                hintText: 'Search for services...',
-                prefixIcon: const Icon(Icons.search, size: 20),
-                suffixIcon: _searchQuery.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.close, size: 18),
-                        onPressed: () {
-                          _searchController.clear();
-                          setState(() => _searchQuery = '');
-                        },
-                      )
-                    : null,
+      body: ResponsiveCenter(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ── Search Bar ──────────────────────────────────────────
+            Padding(
+              padding: EdgeInsets.fromLTRB(horizontalPadding, 12, horizontalPadding, 4),
+              child: TextField(
+                controller: _searchController,
+                onChanged: (v) => setState(() => _searchQuery = v),
+                style: tt.bodyMedium?.copyWith(color: AppTheme.onBackground),
+                decoration: InputDecoration(
+                  hintText: 'Search for services...',
+                  prefixIcon: const Icon(Icons.search, size: 20),
+                  suffixIcon: _searchQuery.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.close, size: 18),
+                          onPressed: () {
+                            _searchController.clear();
+                            setState(() => _searchQuery = '');
+                          },
+                        )
+                      : null,
+                ),
               ),
             ),
-          ),
 
-          // ── Section Heading ─────────────────────────────────────
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-            child: Text('Browse Categories', style: tt.headlineSmall),
-          ),
+            // ── Section Heading ─────────────────────────────────────
+            Padding(
+              padding: EdgeInsets.fromLTRB(horizontalPadding, 16, horizontalPadding, 8),
+              child: Text('Browse Categories', style: tt.headlineSmall),
+            ),
 
-          // ── Category Grid ───────────────────────────────────────
-          Expanded(
-            child: filtered.isEmpty
-                ? _EmptySearchState(query: _searchQuery)
-                : GridView.builder(
-                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      crossAxisSpacing: 10,
-                      mainAxisSpacing: 10,
-                      childAspectRatio: 1.4,
-                    ),
-                    itemCount: filtered.length,
-                    itemBuilder: (context, index) {
+            // ── Category Grid ───────────────────────────────────────
+            Expanded(
+              child: filtered.isEmpty
+                  ? _EmptySearchState(query: _searchQuery)
+                  : GridView.builder(
+                      padding: EdgeInsets.fromLTRB(horizontalPadding, 4, horizontalPadding, 24),
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: Responsive.gridCrossAxisCount(
+                          context,
+                          mobile: 2,
+                          tablet: 3,
+                          desktop: 4,
+                        ),
+                        crossAxisSpacing: 10,
+                        mainAxisSpacing: 10,
+                        childAspectRatio: Responsive.gridChildAspectRatio(context),
+                      ),
+                      itemCount: filtered.length,
+                      itemBuilder: (context, index) {
                       final cat = filtered[index];
                       final count = _shopCountFor(cat.name);
                       return CategoryCard(
@@ -166,8 +173,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       );
                     },
                   ),
-          ),
-        ],
+            ),
+          ],
+        ),
       ),
     );
   }

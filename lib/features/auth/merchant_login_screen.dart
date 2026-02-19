@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/utils/responsive.dart';
 import '../merchant_dashboard/merchant_dashboard_screen.dart';
 import 'widgets/auth_text_field.dart';
 
@@ -60,16 +61,23 @@ class _MerchantLoginScreenState extends State<MerchantLoginScreen> {
   @override
   Widget build(BuildContext context) {
     final tt = Theme.of(context).textTheme;
+    final horizontalPadding = Responsive.horizontalPadding(context);
 
     return Scaffold(
       backgroundColor: AppTheme.background,
       appBar: _buildAppBar(context),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 600),
+            child: SingleChildScrollView(
+              padding: EdgeInsets.symmetric(
+                horizontal: horizontalPadding,
+                vertical: Responsive.verticalPadding(context),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
               // ── Header ───────────────────────────────────────────
               _PortalHeader(tt: tt),
               const SizedBox(height: 28),
@@ -181,6 +189,8 @@ class _MerchantLoginScreenState extends State<MerchantLoginScreen> {
               // ── Demo info banner ─────────────────────────────────
               _DemoBanner(isLoginMode: _isLoginMode, tt: tt),
             ],
+              ),
+            ),
           ),
         ),
       ),

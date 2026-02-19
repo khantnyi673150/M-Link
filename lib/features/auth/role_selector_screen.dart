@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/utils/responsive.dart';
 import '../home/home_screen.dart';
 import 'merchant_login_screen.dart';
 
@@ -8,54 +9,62 @@ class RoleSelectorScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final horizontalPadding = Responsive.horizontalPadding(context);
+    
     return Scaffold(
       backgroundColor: const Color(0xFFF0F4FF), // very light blue tint
       body: SafeArea(
         child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // ── Logo & Brand ────────────────────────────────────
-                _MLinkLogo(),
-                const SizedBox(height: 48),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 600),
+            child: SingleChildScrollView(
+              padding: EdgeInsets.symmetric(
+                horizontal: horizontalPadding,
+                vertical: Responsive.verticalPadding(context),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // ── Logo & Brand ────────────────────────────────────
+                  _MLinkLogo(),
+                  SizedBox(height: Responsive.isMobile(context) ? 48 : 64),
 
-                // ── Student Card ────────────────────────────────────
-                _RoleCard(
-                  title: "I'm a Student",
-                  subtitle: 'Browse local services and shops',
-                  icon: Icons.school_rounded,
-                  iconColor: AppTheme.primary,
-                  iconBgColor: AppTheme.iconCircleBlue,
-                  onTap: () {
-                    debugPrint('Student selected');
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => const HomeScreen(),
-                      ),
-                    );
-                  },
-                ),
-                const SizedBox(height: 16),
+                  // ── Student Card ────────────────────────────────────
+                  _RoleCard(
+                    title: "I'm a Student",
+                    subtitle: 'Browse local services and shops',
+                    icon: Icons.school_rounded,
+                    iconColor: AppTheme.primary,
+                    iconBgColor: AppTheme.iconCircleBlue,
+                    onTap: () {
+                      debugPrint('Student selected');
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => const HomeScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 16),
 
-                // ── Merchant Card ───────────────────────────────────
-                _RoleCard(
-                  title: "I'm a Merchant",
-                  subtitle: 'Manage your shop profile',
-                  icon: Icons.storefront_rounded,
-                  iconColor: AppTheme.secondary,
-                  iconBgColor: AppTheme.iconCircleGreen,
-                  onTap: () {
-                    debugPrint('Merchant selected');
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => const MerchantLoginScreen(),
-                      ),
-                    );
-                  },
-                ),
-              ],
+                  // ── Merchant Card ───────────────────────────────────
+                  _RoleCard(
+                    title: "I'm a Merchant",
+                    subtitle: 'Manage your shop profile',
+                    icon: Icons.storefront_rounded,
+                    iconColor: AppTheme.secondary,
+                    iconBgColor: AppTheme.iconCircleGreen,
+                    onTap: () {
+                      debugPrint('Merchant selected');
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => const MerchantLoginScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
             ),
           ),
         ),

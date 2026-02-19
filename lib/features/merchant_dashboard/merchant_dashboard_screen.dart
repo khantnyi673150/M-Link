@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/utils/responsive.dart';
 import '../../models/shop_model.dart';
 
 class MerchantDashboardScreen extends StatefulWidget {
@@ -58,27 +59,38 @@ class _MerchantDashboardScreenState extends State<MerchantDashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final horizontalPadding = Responsive.horizontalPadding(context);
+    final verticalPadding = Responsive.verticalPadding(context);
+
     return Scaffold(
       backgroundColor: AppTheme.background,
       appBar: _buildAppBar(context),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Main content card
-              _currentShop == null
-                  ? _NoShopState(onCreateShop: _createOrEditShop)
-                  : _ShopProfileCard(
-                      shop: _currentShop!,
-                      onEditShop: _createOrEditShop,
-                    ),
-              const SizedBox(height: 20),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 900),
+            child: SingleChildScrollView(
+              padding: EdgeInsets.symmetric(
+                horizontal: horizontalPadding,
+                vertical: verticalPadding,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Main content card
+                  _currentShop == null
+                      ? _NoShopState(onCreateShop: _createOrEditShop)
+                      : _ShopProfileCard(
+                          shop: _currentShop!,
+                          onEditShop: _createOrEditShop,
+                        ),
+                  const SizedBox(height: 20),
 
-              // Tips for success section
-              _TipsForSuccessSection(),
-            ],
+                  // Tips for success section
+                  _TipsForSuccessSection(),
+                ],
+              ),
+            ),
           ),
         ),
       ),
