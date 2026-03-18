@@ -1,0 +1,10 @@
+{
+  "name": "m-link-project",
+  "version": "1.0.0",
+  "description": "M-Link Flutter Web Project",
+  "scripts": {
+    "build": "flutter build web --release",
+    "deploy": "firebase deploy --only hosting",
+    "serve": "firebase serve --only hosting"
+  }
+}

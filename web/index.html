@@ -33,8 +33,19 @@
   <link rel="manifest" href="manifest.json">
   <script>
     var serviceWorkerVersion = null;
+
+    const params = new URLSearchParams(window.location.search);
+    const shouldOpenApp = params.get('app') === '1';
+
+    if (!shouldOpenApp) {
+      window.location.replace('landing/index.html');
+    } else {
+      const flutterScript = document.createElement('script');
+      flutterScript.src = 'flutter_bootstrap.js';
+      flutterScript.async = true;
+      document.head.appendChild(flutterScript);
+    }
   </script>
-  <script src="flutter_bootstrap.js" async></script>
 </head>
 <body>
 </body>
