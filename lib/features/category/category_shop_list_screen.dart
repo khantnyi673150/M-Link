@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/responsive.dart';
-import '../../models/mock_shops.dart';
 import '../../models/shop_model.dart';
+import '../../services/shop_service.dart';
 import '../home/widgets/shop_list_card.dart';
 import '../shop/shop_detail_screen.dart';
 
@@ -14,44 +14,50 @@ class CategoryShopListScreen extends StatelessWidget {
     required this.categoryName,
   });
 
-  List<Shop> get _filteredShops =>
-      mockShops.where((s) => s.category == categoryName).toList();
-
   @override
   Widget build(BuildContext context) {
     final tt = Theme.of(context).textTheme;
-    final shops = _filteredShops;
     final horizontalPadding = Responsive.horizontalPadding(context);
 
-    return Scaffold(
-      backgroundColor: AppTheme.background,
-      appBar: _buildAppBar(context, shops.length),
-      body: ResponsiveCenter(
-        child: shops.isEmpty
-            ? _EmptyState(categoryName: categoryName, tt: tt)
-            : ListView.builder(
-                padding: EdgeInsets.fromLTRB(
-                  horizontalPadding,
-                  12,
-                  horizontalPadding,
-                  12,
-                ),
-                itemCount: shops.length,
-                itemBuilder: (context, index) {
-                  final shop = shops[index];
-                  return ShopListCard(
-                    shop: shop,
-                    onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => ShopDetailScreen(shop: shop),
+    return StreamBuilder<List<Shop>>(
+      stream: ShopService.streamShopsByCategory(categoryName),
+      builder: (context, snapshot) {
+        final shops = snapshot.data ?? const <Shop>[];
+        return Scaffold(
+          backgroundColor: AppTheme.background,
+          appBar: _buildAppBar(context, shops.length),
+          body: ResponsiveCenter(
+            child: snapshot.connectionState == ConnectionState.waiting
+                ? const Center(child: CircularProgressIndicator())
+                : shops.isEmpty
+                    ? _EmptyState(categoryName: categoryName, tt: tt)
+                    : ListView.builder(
+                        padding: EdgeInsets.fromLTRB(
+                          horizontalPadding,
+                          12,
+                          horizontalPadding,
+                          12,
                         ),
-                      );
-                    },
-                  );
-                },
-              ),
-      ),
+                        itemCount: shops.length,
+                        itemBuilder: (context, index) {
+                          final shop = shops[index];
+                          return ShopListCard(
+                            shop: shop,
+                            showImage: false,
+                            onTap: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      ShopDetailScreen(shop: shop),
+                                ),
+                              );
+                            },
+                          );
+                        },
+                      ),
+          ),
+        );
+      },
     );
   }
 

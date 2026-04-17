@@ -1,0 +1,24 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    
+    {
+      "name": "Flutter Chrome (Cloudinary)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "deviceId": "chrome",
+      "toolArgs": [
+        "--dart-define=CLOUDINARY_CLOUD_NAME=dcckywnkm",
+        "--dart-define=CLOUDINARY_UPLOAD_PRESET=mlink_image"
+      ]
+    },
+    {
+      "name": "Flutter Chrome",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "deviceId": "chrome"
+    }
+  ]
+}

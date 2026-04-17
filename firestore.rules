@@ -1,0 +1,31 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /shops/{shopId} {
+      // Students and public users can browse shops.
+      allow read: if true;
+
+      // Merchant can create only their own shop document.
+      allow create: if request.auth != null
+        && request.resource.data.merchantId == request.auth.uid;
+
+      // Merchant can update only their own existing shop document.
+      allow update: if request.auth != null
+        && resource.data.merchantId == request.auth.uid
+        && request.resource.data.merchantId == request.auth.uid;
+
+      // Merchant can delete only their own existing shop document.
+      allow delete: if request.auth != null
+        && resource.data.merchantId == request.auth.uid;
+
+      match /menu/{menuId} {
+        // Public browsing of menu items.
+        allow read: if true;
+
+        // Only the owning merchant can manage menu items.
+        allow create, update, delete: if request.auth != null
+          && get(/databases/$(database)/documents/shops/$(shopId)).data.merchantId == request.auth.uid;
+      }
+    }
+  }
+}

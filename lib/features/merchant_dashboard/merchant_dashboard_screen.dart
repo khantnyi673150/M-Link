@@ -2,15 +2,13 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/responsive.dart';
 import '../../models/shop_model.dart';
+import '../../services/auth_service.dart';
+import '../../services/shop_service.dart';
+import '../auth/role_selector_screen.dart';
+import '../shop_management/shop_profile_management_screen.dart';
 
 class MerchantDashboardScreen extends StatefulWidget {
-  /// Optional shop profile. If null, shows "No Shop Profile Yet" state.
-  final Shop? initialShop;
-
-  const MerchantDashboardScreen({
-    super.key,
-    this.initialShop,
-  });
+  const MerchantDashboardScreen({super.key});
 
   @override
   State<MerchantDashboardScreen> createState() =>
@@ -19,42 +17,74 @@ class MerchantDashboardScreen extends StatefulWidget {
 
 class _MerchantDashboardScreenState extends State<MerchantDashboardScreen> {
   Shop? _currentShop;
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _currentShop = widget.initialShop;
+    _loadShop();
   }
 
-  void _logout() {
-    // TODO: Clear auth state and navigate back to RoleSelectorScreen
-    Navigator.of(context).popUntil((route) => route.isFirst);
+  Future<void> _loadShop() async {
+    final user = AuthService.currentUser;
+    if (user == null) {
+      if (mounted) {
+        _goToRoleSelector();
+      }
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    try {
+      final shop = await ShopService.getMerchantShop(user.uid);
+      if (!mounted) return;
+      setState(() {
+        _currentShop = shop;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Unable to load your shop right now.')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 
-  void _createOrEditShop() {
-    // TODO: Navigate to ShopProfileManagementScreen
-    debugPrint(
-      _currentShop == null ? 'Create shop profile' : 'Edit shop profile',
+  Future<void> _logout() async {
+    await AuthService.signOut();
+    if (!mounted) return;
+    _goToRoleSelector();
+  }
+
+  void _goToRoleSelector() {
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (context) => const RoleSelectorScreen()),
+      (route) => false,
+    );
+  }
+
+  Future<void> _createOrEditShop() async {
+    final user = AuthService.currentUser;
+    if (user == null) {
+      _goToRoleSelector();
+      return;
+    }
+
+    final changed = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (context) => ShopProfileManagementScreen(
+          merchantId: user.uid,
+          existingShop: _currentShop,
+        ),
+      ),
     );
 
-    // DEMO: Toggle between states for testing
-    setState(() {
-      if (_currentShop == null) {
-        _currentShop = Shop(
-          id: 'demo_shop',
-          name: 'CocoCafe',
-          category: 'food',
-          description: 'Coffee Shop',
-          rating: 4.5,
-          imageUrls: [],
-          priceRange: '23',
-          location: 'uni',
-          phone: '12324',
-        );
-      } else {
-        _currentShop = null;
-      }
-    });
+    if (changed == true) {
+      await _loadShop();
+    }
   }
 
   @override
@@ -69,28 +99,27 @@ class _MerchantDashboardScreenState extends State<MerchantDashboardScreen> {
         child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 900),
-            child: SingleChildScrollView(
-              padding: EdgeInsets.symmetric(
-                horizontal: horizontalPadding,
-                vertical: verticalPadding,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // Main content card
-                  _currentShop == null
-                      ? _NoShopState(onCreateShop: _createOrEditShop)
-                      : _ShopProfileCard(
-                          shop: _currentShop!,
-                          onEditShop: _createOrEditShop,
-                        ),
-                  const SizedBox(height: 20),
-
-                  // Tips for success section
-                  _TipsForSuccessSection(),
-                ],
-              ),
-            ),
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : SingleChildScrollView(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: horizontalPadding,
+                      vertical: verticalPadding,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _currentShop == null
+                            ? _NoShopState(onCreateShop: _createOrEditShop)
+                            : _ShopProfileCard(
+                                shop: _currentShop!,
+                                onEditShop: _createOrEditShop,
+                              ),
+                        const SizedBox(height: 20),
+                        const _TipsForSuccessSection(),
+                      ],
+                    ),
+                  ),
           ),
         ),
       ),
@@ -139,7 +168,6 @@ class _MerchantDashboardScreenState extends State<MerchantDashboardScreen> {
   }
 }
 
-// ── No shop profile state ─────────────────────────────────────────
 class _NoShopState extends StatelessWidget {
   final VoidCallback onCreateShop;
 
@@ -158,7 +186,6 @@ class _NoShopState extends StatelessWidget {
       ),
       child: Column(
         children: [
-          // Empty state icon
           Container(
             width: 80,
             height: 80,
@@ -173,24 +200,18 @@ class _NoShopState extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 20),
-
-          // Title
           Text(
             'No Shop Profile Yet',
             style: tt.headlineSmall?.copyWith(fontWeight: FontWeight.w700),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 8),
-
-          // Subtitle
           Text(
             'Create your shop profile to start reaching students',
             style: tt.bodyMedium?.copyWith(color: AppTheme.onSurfaceVariant),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 24),
-
-          // Create button
           ElevatedButton.icon(
             onPressed: onCreateShop,
             style: AppTheme.merchantButtonStyle,
@@ -203,7 +224,6 @@ class _NoShopState extends StatelessWidget {
   }
 }
 
-// ── Shop profile card (when shop exists) ──────────────────────────
 class _ShopProfileCard extends StatelessWidget {
   final Shop shop;
   final VoidCallback onEditShop;
@@ -222,7 +242,6 @@ class _ShopProfileCard extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Shop info card
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
@@ -233,14 +252,11 @@ class _ShopProfileCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Shop name
               Text(
                 shop.name,
                 style: tt.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
               ),
               const SizedBox(height: 8),
-
-              // Last updated
               Row(
                 children: [
                   Icon(
@@ -258,27 +274,17 @@ class _ShopProfileCard extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 16),
-
-              // Category
               _InfoRow(label: 'Category', value: shop.category, tt: tt),
               const SizedBox(height: 8),
-
-              // Price Range
               _InfoRow(label: 'Price Range', value: shop.priceRange, tt: tt),
               const SizedBox(height: 8),
-
-              // Location
               _InfoRow(label: 'Location', value: shop.location, tt: tt),
               const SizedBox(height: 8),
-
-              // Phone
               _InfoRow(label: 'Phone', value: shop.phone, tt: tt),
             ],
           ),
         ),
         const SizedBox(height: 16),
-
-        // Description section
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
@@ -299,13 +305,11 @@ class _ShopProfileCard extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 20),
-
-        // Edit button
         ElevatedButton.icon(
           onPressed: onEditShop,
           style: AppTheme.merchantButtonStyle,
           icon: const Icon(Icons.edit_rounded, size: 20),
-          label: const Text('Edit Shop Profile'),
+          label: const Text('Edit Shop Profile & Menu'),
         ),
       ],
     );
@@ -325,35 +329,31 @@ class _InfoRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return RichText(
-      text: TextSpan(
-        style: tt.bodyMedium?.copyWith(color: AppTheme.onSurfaceVariant),
-        children: [
-          TextSpan(
-            text: '$label: ',
-            style: const TextStyle(fontWeight: FontWeight.w600),
-          ),
-          TextSpan(
-            text: value,
-            style: TextStyle(
-              fontWeight: FontWeight.w700,
-              color: AppTheme.onBackground,
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 96,
+          child: Text(
+            '$label:',
+            style: tt.bodyMedium?.copyWith(
+              color: AppTheme.onSurfaceVariant,
             ),
           ),
-        ],
-      ),
+        ),
+        Expanded(
+          child: Text(
+            value,
+            style: tt.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+          ),
+        ),
+      ],
     );
   }
 }
 
-// ── Tips for Success section ──────────────────────────────────────
 class _TipsForSuccessSection extends StatelessWidget {
-  final List<String> tips = const [
-    'Keep your shop information up-to-date',
-    'Use clear, high-quality images',
-    'Provide accurate pricing information',
-    'Include your exact location and directions',
-  ];
+  const _TipsForSuccessSection();
 
   @override
   Widget build(BuildContext context) {
@@ -362,43 +362,53 @@ class _TipsForSuccessSection extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppTheme.iconCircleGreen,
+        color: AppTheme.surface,
         borderRadius: BorderRadius.circular(AppTheme.borderRadius),
+        border: Border.all(color: AppTheme.outline),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             'Tips for Success',
-            style: tt.titleMedium?.copyWith(
-              color: AppTheme.secondaryDark,
-              fontWeight: FontWeight.w700,
-            ),
+            style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 12),
-          ...tips.map((tip) => Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '• ',
-                      style: tt.bodyMedium?.copyWith(
-                        color: AppTheme.secondaryDark,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    Expanded(
-                      child: Text(
-                        tip,
-                        style: tt.bodyMedium?.copyWith(
-                          color: AppTheme.secondaryDark,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              )),
+          _TipRow(text: 'Keep your shop description clear and specific.'),
+          _TipRow(text: 'Use a real phone number students can contact.'),
+          _TipRow(text: 'Add menu items with accurate prices.'),
+          _TipRow(text: 'Update details quickly when things change.'),
+        ],
+      ),
+    );
+  }
+}
+
+class _TipRow extends StatelessWidget {
+  final String text;
+
+  const _TipRow({required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    final tt = Theme.of(context).textTheme;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Padding(
+            padding: EdgeInsets.only(top: 2),
+            child: Icon(Icons.check_circle_rounded, size: 16, color: AppTheme.secondary),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
+              style: tt.bodyMedium?.copyWith(color: AppTheme.onSurfaceVariant),
+            ),
+          ),
         ],
       ),
     );

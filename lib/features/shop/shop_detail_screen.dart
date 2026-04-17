@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import '../../core/theme/app_theme.dart';
 import '../../models/shop_model.dart';
 import '../../models/menu_item.dart';
+import '../../services/shop_service.dart';
 import 'widgets/shop_image_carousel.dart';
 import 'widgets/shop_info_section.dart';
 
@@ -44,9 +45,13 @@ class ShopDetailScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 // Image carousel
-                ShopImageCarousel(
-                  imageUrls: shop.imageUrls,
-                  height: 240,
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: ShopImageCarousel(
+                    imageUrls: shop.imageUrls,
+                    height: 260,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
                 ),
                 const SizedBox(height: 16),
 
@@ -73,7 +78,7 @@ class ShopDetailScreen extends StatelessWidget {
                 // Menu section
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: _MenuSection(),
+                  child: _MenuSection(shopId: shop.id),
                 ),
                 const SizedBox(height: 16),
 
@@ -154,6 +159,10 @@ class _PriceRangeCard extends StatelessWidget {
 
 // ── Menu section ──────────────────────────────────────────────────
 class _MenuSection extends StatelessWidget {
+  final String shopId;
+
+  const _MenuSection({required this.shopId});
+
   @override
   Widget build(BuildContext context) {
     final tt = Theme.of(context).textTheme;
@@ -170,7 +179,29 @@ class _MenuSection extends StatelessWidget {
         children: [
           Text('Menu', style: tt.titleMedium),
           const SizedBox(height: 12),
-          ...sampleMenuItems.map((item) => _MenuItemRow(item: item)),
+          StreamBuilder<List<MenuItem>>(
+            stream: ShopService.streamMenuItems(shopId),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 20),
+                  child: Center(child: CircularProgressIndicator()),
+                );
+              }
+
+              final items = snapshot.data ?? const <MenuItem>[];
+              if (items.isEmpty) {
+                return Text(
+                  'No menu items added yet.',
+                  style: tt.bodyMedium?.copyWith(color: AppTheme.onSurfaceVariant),
+                );
+              }
+
+              return Column(
+                children: items.map((item) => _MenuItemRow(item: item)).toList(),
+              );
+            },
+          ),
         ],
       ),
     );

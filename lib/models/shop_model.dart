@@ -24,15 +24,17 @@ class Shop {
   /// Creates a [Shop] from a JSON map.
   factory Shop.fromJson(Map<String, dynamic> json) {
     return Shop(
-      id: json['id'] as String,
-      name: json['name'] as String,
-      category: json['category'] as String,
-      description: json['description'] as String,
-      rating: (json['rating'] as num).toDouble(),
-      imageUrls: List<String>.from(json['imageUrls'] as List),
-      priceRange: json['priceRange'] as String,
-      location: json['location'] as String,
-      phone: json['phone'] as String,
+      id: (json['id'] as String?) ?? '',
+      name: (json['name'] as String?) ?? '',
+      category: (json['category'] as String?) ?? '',
+      description: (json['description'] as String?) ?? '',
+      rating: ((json['rating'] as num?) ?? 0).toDouble(),
+      imageUrls: (json['imageUrls'] as List<dynamic>? ?? const [])
+          .map((e) => e.toString())
+          .toList(),
+      priceRange: (json['priceRange'] as String?) ?? '',
+      location: (json['location'] as String?) ?? '',
+      phone: (json['phone'] as String?) ?? '',
     );
   }
 

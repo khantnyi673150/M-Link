@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/responsive.dart';
 import '../merchant_dashboard/merchant_dashboard_screen.dart';
+import '../../services/auth_service.dart';
 import 'widgets/auth_text_field.dart';
 
 class MerchantLoginScreen extends StatefulWidget {
@@ -44,18 +45,52 @@ class _MerchantLoginScreenState extends State<MerchantLoginScreen> {
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isLoading = true);
-    // TODO: Replace with real auth service call
-    await Future.delayed(const Duration(milliseconds: 800));
-    setState(() => _isLoading = false);
-    if (!mounted) return;
+    try {
+      if (_isLoginMode) {
+        await AuthService.signInMerchant(
+          email: _emailController.text.trim(),
+          password: _passwordController.text,
+        );
+      } else {
+        await AuthService.registerMerchant(
+          email: _emailController.text.trim(),
+          password: _passwordController.text,
+        );
+      }
 
-    // Navigate to MerchantDashboardScreen
-    // Pass null for new merchants (no shop yet) or a Shop object for existing merchants
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(
-        builder: (context) => const MerchantDashboardScreen(initialShop: null),
-      ),
-    );
+      if (!mounted) return;
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (context) => const MerchantDashboardScreen(),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_mapAuthError(e))),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  String _mapAuthError(Object error) {
+    if (error is! Exception || error.toString().isEmpty) {
+      return 'Authentication failed. Please try again.';
+    }
+
+    final message = error.toString().toLowerCase();
+    if (message.contains('user-not-found')) return 'No account found for this email.';
+    if (message.contains('wrong-password') || message.contains('invalid-credential')) {
+      return 'Email or password is incorrect.';
+    }
+    if (message.contains('email-already-in-use')) return 'This email is already registered.';
+    if (message.contains('weak-password')) return 'Password is too weak.';
+    if (message.contains('invalid-email')) return 'Email format is invalid.';
+
+    return 'Authentication failed. Please try again.';
   }
 
   @override

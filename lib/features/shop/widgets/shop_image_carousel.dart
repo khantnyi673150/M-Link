@@ -4,7 +4,7 @@ class ShopImageCarousel extends StatefulWidget {
   /// List of image URLs to display in the carousel.
   final List<String> imageUrls;
 
-  /// Height of the carousel. Defaults to 260.
+  /// Height of the carousel. Defaults to 320.
   final double height;
 
   /// Border radius applied to the carousel container.
@@ -13,7 +13,7 @@ class ShopImageCarousel extends StatefulWidget {
   const ShopImageCarousel({
     super.key,
     required this.imageUrls,
-    this.height = 260.0,
+    this.height = 320.0,
     this.borderRadius = const BorderRadius.all(Radius.circular(0)),
   });
 

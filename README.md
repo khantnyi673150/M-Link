@@ -1,16 +1,75 @@
-# m_link_project
+# M-Link Project
 
-A new Flutter project.
+Flutter app for campus marketplace flows:
+- Merchant registration/login
+- Merchant shop profile creation/edit
+- Merchant menu item management
+- Student browsing by category and shop detail
 
-## Getting Started
+## Firebase Setup (Required)
 
-This project is a starting point for a Flutter application.
+This app now uses Firebase Auth + Cloud Firestore for real accounts and data.
 
-A few resources to get you started if this is your first Flutter project:
+1. Install FlutterFire CLI (one-time):
+```bash
+dart pub global activate flutterfire_cli
+```
+2. Configure this project:
+```bash
+flutterfire configure
+```
+3. Ensure platform config files are generated/added:
+- `android/app/google-services.json`
+- `ios/Runner/GoogleService-Info.plist`
+- `lib/firebase_options.dart` (optional if you choose to wire it)
+4. Enable Firebase services in console:
+- Authentication: Email/Password provider
+- Cloud Firestore: create database
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+## Firestore Data Shape
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+Collection: `shops`
+- `merchantId` (string)
+- `name` (string)
+- `category` (string)
+- `description` (string)
+- `priceRange` (string)
+- `location` (string)
+- `phone` (string)
+- `imageUrls` (array of strings)
+- `rating` (number)
+
+Subcollection: `shops/{shopId}/menu`
+- `name` (string)
+- `description` (string)
+- `price` (number)
+
+## Example Firestore Rules
+
+Use rules similar to this for owner-write/public-read behavior:
+
+```txt
+rules_version = '2';
+service cloud.firestore {
+	match /databases/{database}/documents {
+		match /shops/{shopId} {
+			allow read: if true;
+			allow create, update, delete: if request.auth != null
+				&& request.resource.data.merchantId == request.auth.uid;
+
+			match /menu/{menuId} {
+				allow read: if true;
+				allow create, update, delete: if request.auth != null
+					&& get(/databases/$(database)/documents/shops/$(shopId)).data.merchantId == request.auth.uid;
+			}
+		}
+	}
+}
+```
+
+## Run
+
+```bash
+flutter pub get
+flutter run
+```

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/responsive.dart';
-import '../../models/mock_shops.dart';
+import '../../models/shop_model.dart';
+import '../../services/shop_service.dart';
 import '../category/category_shop_list_screen.dart';
 import '../home/widgets/category_card.dart';
 
@@ -89,9 +90,6 @@ class _HomeScreenState extends State<HomeScreen> {
         .toList();
   }
 
-  int _shopCountFor(String category) =>
-      mockShops.where((s) => s.category == category).length;
-
   @override
   Widget build(BuildContext context) {
     final tt = Theme.of(context).textTheme;
@@ -101,81 +99,86 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       backgroundColor: AppTheme.background,
       appBar: _buildAppBar(context),
-      body: ResponsiveCenter(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ── Search Bar ──────────────────────────────────────────
-            Padding(
-              padding: EdgeInsets.fromLTRB(horizontalPadding, 12, horizontalPadding, 4),
-              child: TextField(
-                controller: _searchController,
-                onChanged: (v) => setState(() => _searchQuery = v),
-                style: tt.bodyMedium?.copyWith(color: AppTheme.onBackground),
-                decoration: InputDecoration(
-                  hintText: 'Search for services...',
-                  prefixIcon: const Icon(Icons.search, size: 20),
-                  suffixIcon: _searchQuery.isNotEmpty
-                      ? IconButton(
-                          icon: const Icon(Icons.close, size: 18),
-                          onPressed: () {
-                            _searchController.clear();
-                            setState(() => _searchQuery = '');
-                          },
-                        )
-                      : null,
-                ),
-              ),
-            ),
+      body: StreamBuilder<List<Shop>>(
+        stream: ShopService.streamAllShops(),
+        builder: (context, snapshot) {
+          final shops = snapshot.data ?? const <Shop>[];
 
-            // ── Section Heading ─────────────────────────────────────
-            Padding(
-              padding: EdgeInsets.fromLTRB(horizontalPadding, 16, horizontalPadding, 8),
-              child: Text('Browse Categories', style: tt.headlineSmall),
-            ),
+          int shopCountFor(String category) =>
+              shops.where((s) => s.category == category).length;
 
-            // ── Category Grid ───────────────────────────────────────
-            Expanded(
-              child: filtered.isEmpty
-                  ? _EmptySearchState(query: _searchQuery)
-                  : GridView.builder(
-                      padding: EdgeInsets.fromLTRB(horizontalPadding, 4, horizontalPadding, 24),
-                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: Responsive.gridCrossAxisCount(
-                          context,
-                          mobile: 2,
-                          tablet: 3,
-                          desktop: 4,
-                        ),
-                        crossAxisSpacing: 10,
-                        mainAxisSpacing: 10,
-                        childAspectRatio: Responsive.gridChildAspectRatio(context),
-                      ),
-                      itemCount: filtered.length,
-                      itemBuilder: (context, index) {
-                      final cat = filtered[index];
-                      final count = _shopCountFor(cat.name);
-                      return CategoryCard(
-                        icon: cat.icon,
-                        title: cat.name,
-                        badge: count > 0 ? '$count' : null,
-                        iconBackgroundColor: AppTheme.iconCircleBlue,
-                        iconColor: AppTheme.primary,
-                        onTap: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (context) => CategoryShopListScreen(
-                                categoryName: cat.name,
-                              ),
-                            ),
-                          );
-                        },
-                      );
-                    },
+          return ResponsiveCenter(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: EdgeInsets.fromLTRB(horizontalPadding, 12, horizontalPadding, 4),
+                  child: TextField(
+                    controller: _searchController,
+                    onChanged: (v) => setState(() => _searchQuery = v),
+                    style: tt.bodyMedium?.copyWith(color: AppTheme.onBackground),
+                    decoration: InputDecoration(
+                      hintText: 'Search for services...',
+                      prefixIcon: const Icon(Icons.search, size: 20),
+                      suffixIcon: _searchQuery.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.close, size: 18),
+                              onPressed: () {
+                                _searchController.clear();
+                                setState(() => _searchQuery = '');
+                              },
+                            )
+                          : null,
+                    ),
                   ),
+                ),
+                Padding(
+                  padding: EdgeInsets.fromLTRB(horizontalPadding, 16, horizontalPadding, 8),
+                  child: Text('Browse Categories', style: tt.headlineSmall),
+                ),
+                Expanded(
+                  child: filtered.isEmpty
+                      ? _EmptySearchState(query: _searchQuery)
+                      : GridView.builder(
+                          padding: EdgeInsets.fromLTRB(horizontalPadding, 4, horizontalPadding, 24),
+                          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: Responsive.gridCrossAxisCount(
+                              context,
+                              mobile: 2,
+                              tablet: 3,
+                              desktop: 4,
+                            ),
+                            crossAxisSpacing: 10,
+                            mainAxisSpacing: 10,
+                            childAspectRatio: Responsive.gridChildAspectRatio(context),
+                          ),
+                          itemCount: filtered.length,
+                          itemBuilder: (context, index) {
+                            final cat = filtered[index];
+                            final count = shopCountFor(cat.name);
+                            return CategoryCard(
+                              icon: cat.icon,
+                              title: cat.name,
+                              badge: count > 0 ? '$count' : null,
+                              iconBackgroundColor: AppTheme.iconCircleBlue,
+                              iconColor: AppTheme.primary,
+                              onTap: () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (context) => CategoryShopListScreen(
+                                      categoryName: cat.name,
+                                    ),
+                                  ),
+                                );
+                              },
+                            );
+                          },
+                        ),
+                ),
+              ],
             ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }

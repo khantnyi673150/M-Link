@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1044036493096",
+    "project_id": "m-link-8ba07",
+    "storage_bucket": "m-link-8ba07.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1044036493096:android:8e1540831d84b2f84b3a1d",
+        "android_client_info": {
+          "package_name": "com.example.m_link_project"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCl77vn9EyOgz6bPtMeVbWeqowFMjqdGh8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
