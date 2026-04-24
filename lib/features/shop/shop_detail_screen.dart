@@ -341,13 +341,6 @@ class _ContactSection extends StatelessWidget {
             onTap: () => debugPrint('Open Facebook'),
           ),
           _ContactRow(
-            icon: Icons.chat_bubble_rounded,
-            iconColor: const Color(0xFF0084FF),
-            label: 'Messenger',
-            value: 'Chat with us',
-            onTap: () => debugPrint('Open Messenger'),
-          ),
-          _ContactRow(
             icon: Icons.chat_rounded,
             iconColor: const Color(0xFF00B900),
             label: 'Line',
