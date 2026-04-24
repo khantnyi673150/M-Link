@@ -16,29 +16,41 @@ class CloudinaryUploadException implements Exception {
 class CloudinaryService {
   CloudinaryService._();
 
+  static const String _fallbackCloudName = 'dcckywnkm';
+  static const String _fallbackUploadPreset = 'mlink_image';
+
   // Values can be overridden with --dart-define in any environment.
   static const String _cloudName = String.fromEnvironment(
     'CLOUDINARY_CLOUD_NAME',
-    defaultValue: 'dcckywnkm',
+    defaultValue: _fallbackCloudName,
   );
   static const String _uploadPreset = String.fromEnvironment(
     'CLOUDINARY_UPLOAD_PRESET',
-    defaultValue: 'mlink_image',
+    defaultValue: _fallbackUploadPreset,
   );
 
   static Future<String> uploadShopImage({
     required Uint8List imageBytes,
     required String merchantId,
   }) async {
-    if (_cloudName.isEmpty || _uploadPreset.isEmpty) {
+    final cloudName = _cloudName.trim().isEmpty
+        ? _fallbackCloudName
+        : _cloudName.trim();
+    final uploadPreset = _uploadPreset.trim().isEmpty
+        ? _fallbackUploadPreset
+        : _uploadPreset.trim();
+
+    if (cloudName.isEmpty || uploadPreset.isEmpty) {
       throw const CloudinaryUploadException(
         'Cloudinary is not configured. Set CLOUDINARY_CLOUD_NAME and CLOUDINARY_UPLOAD_PRESET.',
       );
     }
 
-    final uri = Uri.parse('https://api.cloudinary.com/v1_1/$_cloudName/image/upload');
+    final uri = Uri.parse(
+      'https://api.cloudinary.com/v1_1/$cloudName/image/upload',
+    );
     final request = http.MultipartRequest('POST', uri)
-      ..fields['upload_preset'] = _uploadPreset
+      ..fields['upload_preset'] = uploadPreset
       ..fields['folder'] = 'm_link/shops/$merchantId'
       ..files.add(
         http.MultipartFile.fromBytes(
@@ -72,7 +84,9 @@ class CloudinaryService {
     final decoded = jsonDecode(body) as Map<String, dynamic>;
     final url = decoded['secure_url']?.toString() ?? '';
     if (url.isEmpty) {
-      throw const CloudinaryUploadException('Image upload completed but no URL was returned.');
+      throw const CloudinaryUploadException(
+        'Image upload completed but no URL was returned.',
+      );
     }
 
     return url;
