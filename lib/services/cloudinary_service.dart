@@ -40,12 +40,6 @@ class CloudinaryService {
         ? _fallbackUploadPreset
         : _uploadPreset.trim();
 
-    if (cloudName.isEmpty || uploadPreset.isEmpty) {
-      throw const CloudinaryUploadException(
-        'Cloudinary is not configured. Set CLOUDINARY_CLOUD_NAME and CLOUDINARY_UPLOAD_PRESET.',
-      );
-    }
-
     final uri = Uri.parse(
       'https://api.cloudinary.com/v1_1/$cloudName/image/upload',
     );
