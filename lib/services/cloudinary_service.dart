@@ -16,9 +16,15 @@ class CloudinaryUploadException implements Exception {
 class CloudinaryService {
   CloudinaryService._();
 
-  // Set these using --dart-define for local/dev runs.
-  static const String _cloudName = String.fromEnvironment('CLOUDINARY_CLOUD_NAME');
-  static const String _uploadPreset = String.fromEnvironment('CLOUDINARY_UPLOAD_PRESET');
+  // Values can be overridden with --dart-define in any environment.
+  static const String _cloudName = String.fromEnvironment(
+    'CLOUDINARY_CLOUD_NAME',
+    defaultValue: 'dcckywnkm',
+  );
+  static const String _uploadPreset = String.fromEnvironment(
+    'CLOUDINARY_UPLOAD_PRESET',
+    defaultValue: 'mlink_image',
+  );
 
   static Future<String> uploadShopImage({
     required Uint8List imageBytes,
