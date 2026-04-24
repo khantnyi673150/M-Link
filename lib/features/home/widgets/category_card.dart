@@ -42,57 +42,69 @@ class CategoryCard extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 10),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // ── Icon Circle ──────────────────────────────────
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: resolvedIconBg,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(icon, size: 22, color: resolvedIconColor),
-              ),
-              const SizedBox(height: 8),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 10),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // ── Icon Circle ────────────────────────────────
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: resolvedIconBg,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(icon, size: 22, color: resolvedIconColor),
+                  ),
+                  const SizedBox(height: 8),
 
-              // ── Title ────────────────────────────────────────
-              Text(
-                title,
-                style: tt.titleSmall?.copyWith(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                ),
-                textAlign: TextAlign.center,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+                  // ── Title ──────────────────────────────────────
+                  Text(
+                    title,
+                    style: tt.titleSmall?.copyWith(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
               ),
+            ),
 
-              // ── Shop count badge (optional) ───────────────────
-              if (badge != null) ...[
-                const SizedBox(height: 6),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            // Render badge as overlay so it does not increase card height.
+            if (badge != null)
+              Positioned(
+                top: 8,
+                right: 8,
+                child: Container(
+                  constraints: const BoxConstraints(minWidth: 20),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: resolvedIconBg,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(
                     badge!,
+                    textAlign: TextAlign.center,
                     style: tt.labelSmall?.copyWith(
                       color: resolvedIconColor,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w700,
                       fontSize: 11,
                     ),
                   ),
                 ),
-              ],
-            ],
-          ),
+              ),
+          ],
         ),
       ),
     );

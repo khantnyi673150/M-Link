@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Delete Account | M-Link</title>
+  <meta name="description" content="How to delete your M-Link account and what data is removed.">
+  <style>
+    :root {
+      --bg: #f6f8fb;
+      --surface: #ffffff;
+      --text: #1b1f24;
+      --muted: #5b6470;
+      --border: #d9e0e8;
+      --accent: #1f7a8c;
+      --danger: #b42318;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      color: var(--text);
+      background: linear-gradient(180deg, #eef5f8 0%, var(--bg) 45%, var(--bg) 100%);
+      line-height: 1.6;
+    }
+    .wrap {
+      width: min(880px, 92vw);
+      margin: 36px auto;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 26px;
+      box-shadow: 0 12px 30px rgba(17, 24, 39, 0.06);
+    }
+    h1 { margin: 0 0 8px; font-size: clamp(1.6rem, 3.5vw, 2.2rem); line-height: 1.2; }
+    h2 { margin-top: 26px; font-size: 1.2rem; border-bottom: 1px solid var(--border); padding-bottom: 6px; }
+    p, li { font-size: 0.98rem; }
+    .muted { color: var(--muted); margin: 0 0 14px; }
+    .danger-box {
+      border: 1px solid #f3c7c3;
+      background: #fff5f4;
+      color: #6b1d16;
+      border-radius: 10px;
+      padding: 12px 14px;
+      margin: 12px 0 2px;
+    }
+    a { color: var(--accent); }
+    code { background: #eef3f7; padding: 2px 6px; border-radius: 6px; }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <h1>Account Deletion Request</h1>
+    <p class="muted"><strong>M-Link</strong> - Last updated: April 22, 2026</p>
+
+    <p>
+      This page explains how users can delete their M-Link account and what data is deleted or retained.
+    </p>
+
+    <h2>How to Delete Your Account (In-App)</h2>
+    <ol>
+      <li>Open M-Link and sign in as a merchant.</li>
+      <li>Go to the merchant dashboard.</li>
+      <li>Tap <strong>Delete Account</strong> in the top bar.</li>
+      <li>Confirm deletion and enter your password.</li>
+      <li>Your account is deleted immediately after confirmation.</li>
+    </ol>
+
+    <h2>Data Deleted</h2>
+    <ul>
+      <li>Authentication account (Firebase Auth user).</li>
+      <li>Merchant shop profile data.</li>
+      <li>Merchant menu items linked to that shop profile.</li>
+    </ul>
+
+    <h2>Data Retained</h2>
+    <p>
+      We do not intentionally retain deleted merchant account/profile records after successful deletion.
+      Some technical logs and backups may remain for a limited period for security, legal, and disaster recovery purposes.
+    </p>
+
+    <h2>Deletion Timeline</h2>
+    <p>
+      Account deletion is processed immediately in the app workflow. Any backup/log expiration follows provider retention policies.
+    </p>
+
+    <h2>Need Help?</h2>
+    <p>
+      If you cannot access the app and need help with account deletion, contact:
+      <br>
+      Email: <a href="mailto:6731503059@lamduan.mfu.ac.th">6731503059@lamduan.mfu.ac.th</a>
+    </p>
+
+    <div class="danger-box">
+      <strong>Important:</strong> Account deletion is permanent and cannot be undone.
+    </div>
+
+    <p class="muted">
+      Related: <a href="/privacy-policy.html">Privacy Policy</a>
+    </p>
+  </main>
+</body>
+</html>

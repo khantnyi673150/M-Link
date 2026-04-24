@@ -8,6 +8,7 @@ class Shop {
   final String priceRange;
   final String location;
   final String phone;
+  final String googleMapsUrl;
 
   const Shop({
     required this.id,
@@ -19,6 +20,7 @@ class Shop {
     required this.priceRange,
     required this.location,
     required this.phone,
+    this.googleMapsUrl = '',
   });
 
   /// Creates a [Shop] from a JSON map.
@@ -35,6 +37,7 @@ class Shop {
       priceRange: (json['priceRange'] as String?) ?? '',
       location: (json['location'] as String?) ?? '',
       phone: (json['phone'] as String?) ?? '',
+      googleMapsUrl: (json['googleMapsUrl'] as String?) ?? '',
     );
   }
 
@@ -50,6 +53,7 @@ class Shop {
       'priceRange': priceRange,
       'location': location,
       'phone': phone,
+      'googleMapsUrl': googleMapsUrl,
     };
   }
 
@@ -64,6 +68,7 @@ class Shop {
     String? priceRange,
     String? location,
     String? phone,
+    String? googleMapsUrl,
   }) {
     return Shop(
       id: id ?? this.id,
@@ -75,6 +80,7 @@ class Shop {
       priceRange: priceRange ?? this.priceRange,
       location: location ?? this.location,
       phone: phone ?? this.phone,
+      googleMapsUrl: googleMapsUrl ?? this.googleMapsUrl,
     );
   }
 

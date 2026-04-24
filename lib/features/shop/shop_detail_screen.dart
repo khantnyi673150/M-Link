@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../core/theme/app_theme.dart';
 import '../../models/shop_model.dart';
 import '../../models/menu_item.dart';
@@ -10,24 +11,19 @@ import 'widgets/shop_info_section.dart';
 class ShopDetailScreen extends StatelessWidget {
   final Shop shop;
 
-  const ShopDetailScreen({
-    super.key,
-    required this.shop,
-  });
+  const ShopDetailScreen({super.key, required this.shop});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.background,
-      body: CustomScrollView(
-        slivers: [
-          // ── App Bar with transparent background ───────────────
-          SliverAppBar(
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            pinned: false,
-            leading: Padding(
-              padding: const EdgeInsets.only(left: 8),
+      body: Column(
+        children: [
+          // Back button at the top
+          Padding(
+            padding: const EdgeInsets.only(left: 8, top: 8),
+            child: Align(
+              alignment: Alignment.topLeft,
               child: CircleAvatar(
                 backgroundColor: Colors.white.withValues(alpha: 0.9),
                 child: IconButton(
@@ -39,83 +35,133 @@ class ShopDetailScreen extends StatelessWidget {
             ),
           ),
 
-          // ── Content ────────────────────────────────────────────
-          SliverToBoxAdapter(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Image carousel
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: ShopImageCarousel(
-                    imageUrls: shop.imageUrls,
-                    height: 260,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                ),
-                const SizedBox(height: 16),
+          // Fixed image carousel
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: ShopImageCarousel(
+              imageUrls: shop.imageUrls,
+              height: 260,
+              borderRadius: BorderRadius.circular(16),
+            ),
+          ),
 
-                // Shop info card
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: ShopInfoSection(
+          // Scrollable content below
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const SizedBox(height: 8),
+
+                  // Shop info card
+                  ShopInfoSection(
                     name: shop.name,
                     category: shop.category,
                     rating: shop.rating,
                     description: shop.description,
-                    location: shop.location,
                   ),
-                ),
-                const SizedBox(height: 16),
+                  const SizedBox(height: 16),
 
-                // Price Range card
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: _PriceRangeCard(shop: shop),
-                ),
-                const SizedBox(height: 16),
+                  // Price Range card
+                  _PriceRangeCard(shop: shop),
+                  const SizedBox(height: 16),
 
-                // Menu section
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: _MenuSection(shopId: shop.id),
-                ),
-                const SizedBox(height: 16),
+                  // Menu section
+                  _MenuSection(shopId: shop.id),
+                  const SizedBox(height: 16),
 
-                // Contact & Order section
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: _ContactSection(shop: shop),
-                ),
-                const SizedBox(height: 20),
+                  // Contact & Order section
+                  _ContactSection(shop: shop),
+                  const SizedBox(height: 20),
 
-                // Get Directions button
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      // TODO: Open maps with shop location
-                      debugPrint('Get directions to: ${shop.location}');
-                    },
+                  // Get Directions button
+                  ElevatedButton.icon(
+                    onPressed: () => _openDirections(context, shop),
                     icon: const Icon(Icons.navigation_rounded, size: 20),
                     label: const Text('Get Directions'),
                   ),
-                ),
-                const SizedBox(height: 16),
+                  const SizedBox(height: 16),
 
-                // Disclaimer
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: _DisclaimerText(),
-                ),
-                const SizedBox(height: 24),
-              ],
+                  // Disclaimer
+                  _DisclaimerText(),
+                  const SizedBox(height: 24),
+                ],
+              ),
             ),
           ),
         ],
       ),
     );
   }
+}
+
+Future<void> _openDirections(BuildContext context, Shop shop) async {
+  final messenger = ScaffoldMessenger.of(context);
+  final candidates = <Uri>[];
+
+  final directMapsUrl = shop.googleMapsUrl.trim();
+  if (directMapsUrl.isNotEmpty) {
+    final parsedDirectUrl = Uri.tryParse(directMapsUrl);
+    if (_isDirectUrl(parsedDirectUrl)) {
+      candidates.add(parsedDirectUrl!);
+    }
+  }
+
+  final trimmedLocation = shop.location.trim();
+  if (trimmedLocation.isEmpty) {
+    messenger.showSnackBar(
+      const SnackBar(content: Text('No location provided for this shop.')),
+    );
+    return;
+  }
+
+  final parsedLocationUrl = Uri.tryParse(trimmedLocation);
+  if (_isDirectUrl(parsedLocationUrl)) {
+    candidates.add(parsedLocationUrl!);
+  } else {
+    final encodedLocation = Uri.encodeComponent(trimmedLocation);
+    candidates.add(
+      Uri.parse(
+        'https://www.google.com/maps/dir/?api=1&destination=$encodedLocation',
+      ),
+    );
+    candidates.add(
+      Uri.parse(
+        'https://www.google.com/maps/search/?api=1&query=$encodedLocation',
+      ),
+    );
+  }
+
+  for (final uri in candidates) {
+    try {
+      if (await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+        return;
+      }
+    } catch (_) {
+      // Try the next candidate or fallback mode.
+    }
+  }
+
+  for (final uri in candidates) {
+    try {
+      if (await launchUrl(uri, mode: LaunchMode.platformDefault)) {
+        return;
+      }
+    } catch (_) {
+      // Try the next candidate.
+    }
+  }
+
+  if (!context.mounted) return;
+  messenger.showSnackBar(
+    const SnackBar(content: Text('Unable to open Google Maps.')),
+  );
+}
+
+bool _isDirectUrl(Uri? uri) {
+  if (uri == null || !uri.hasScheme) return false;
+  return uri.scheme == 'http' || uri.scheme == 'https';
 }
 
 // ── Price Range card ──────────────────────────────────────────────
@@ -193,12 +239,16 @@ class _MenuSection extends StatelessWidget {
               if (items.isEmpty) {
                 return Text(
                   'No menu items added yet.',
-                  style: tt.bodyMedium?.copyWith(color: AppTheme.onSurfaceVariant),
+                  style: tt.bodyMedium?.copyWith(
+                    color: AppTheme.onSurfaceVariant,
+                  ),
                 );
               }
 
               return Column(
-                children: items.map((item) => _MenuItemRow(item: item)).toList(),
+                children: items
+                    .map((item) => _MenuItemRow(item: item))
+                    .toList(),
               );
             },
           ),

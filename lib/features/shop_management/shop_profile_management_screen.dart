@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:image/image.dart' as img;
@@ -33,6 +34,7 @@ class _ShopProfileManagementScreenState
   final _descriptionController = TextEditingController();
   final _priceRangeController = TextEditingController();
   final _locationController = TextEditingController();
+  final _googleMapsUrlController = TextEditingController();
   final _phoneController = TextEditingController();
   final _imagePicker = ImagePicker();
 
@@ -53,15 +55,35 @@ class _ShopProfileManagementScreenState
 
   String _selectedCategory = _categories.first;
   String? _shopId;
-  bool _hasChanges = false;
   bool _savingShop = false;
   bool _savingMenu = false;
   Uint8List? _selectedImageBytes;
   String? _existingImageUrl;
 
+  // Initial values for change detection
+  late String _initialName;
+  late String _initialDescription;
+  late String _initialPriceRange;
+  late String _initialLocation;
+  late String _initialGoogleMapsUrl;
+  late String _initialPhone;
+  late String _initialCategory;
+  late String? _initialImageUrl;
+
   bool get _hasShopImage =>
       _selectedImageBytes != null ||
       (_existingImageUrl != null && _existingImageUrl!.isNotEmpty);
+
+  bool get _formHasChanged =>
+      _nameController.text != _initialName ||
+      _descriptionController.text != _initialDescription ||
+      _priceRangeController.text != _initialPriceRange ||
+      _locationController.text != _initialLocation ||
+      _googleMapsUrlController.text != _initialGoogleMapsUrl ||
+      _phoneController.text != _initialPhone ||
+      _selectedCategory != _initialCategory ||
+      _selectedImageBytes != null ||
+      (_existingImageUrl != _initialImageUrl);
 
   bool get _isShopFormValid =>
       _nameController.text.trim().isNotEmpty &&
@@ -84,6 +106,17 @@ class _ShopProfileManagementScreenState
     setState(() {});
   }
 
+  static Future<Uint8List> _compressImageIsolate(Uint8List bytes) async {
+    final decoded = img.decodeImage(bytes);
+    if (decoded == null) return bytes;
+
+    final resized = decoded.width > 1400
+        ? img.copyResize(decoded, width: 1200)
+        : decoded;
+
+    return Uint8List.fromList(img.encodeJpg(resized, quality: 75));
+  }
+
   @override
   void initState() {
     super.initState();
@@ -94,6 +127,7 @@ class _ShopProfileManagementScreenState
       _descriptionController.text = shop.description;
       _priceRangeController.text = shop.priceRange;
       _locationController.text = shop.location;
+      _googleMapsUrlController.text = shop.googleMapsUrl;
       _phoneController.text = shop.phone;
       _selectedCategory = _categories.contains(shop.category)
           ? shop.category
@@ -103,6 +137,16 @@ class _ShopProfileManagementScreenState
       }
     }
 
+    // Store initial values for change detection
+    _initialName = _nameController.text;
+    _initialDescription = _descriptionController.text;
+    _initialPriceRange = _priceRangeController.text;
+    _initialLocation = _locationController.text;
+    _initialGoogleMapsUrl = _googleMapsUrlController.text;
+    _initialPhone = _phoneController.text;
+    _initialCategory = _selectedCategory;
+    _initialImageUrl = _existingImageUrl;
+
     if (_shopId == null) {
       _hydrateExistingShopId();
     }
@@ -111,6 +155,7 @@ class _ShopProfileManagementScreenState
     _descriptionController.addListener(_onFieldChanged);
     _priceRangeController.addListener(_onFieldChanged);
     _locationController.addListener(_onFieldChanged);
+    _googleMapsUrlController.addListener(_onFieldChanged);
     _phoneController.addListener(_onFieldChanged);
     _menuNameController.addListener(_onFieldChanged);
     _menuDescriptionController.addListener(_onFieldChanged);
@@ -129,6 +174,7 @@ class _ShopProfileManagementScreenState
     _descriptionController.removeListener(_onFieldChanged);
     _priceRangeController.removeListener(_onFieldChanged);
     _locationController.removeListener(_onFieldChanged);
+    _googleMapsUrlController.removeListener(_onFieldChanged);
     _phoneController.removeListener(_onFieldChanged);
     _menuNameController.removeListener(_onFieldChanged);
     _menuDescriptionController.removeListener(_onFieldChanged);
@@ -138,6 +184,7 @@ class _ShopProfileManagementScreenState
     _descriptionController.dispose();
     _priceRangeController.dispose();
     _locationController.dispose();
+    _googleMapsUrlController.dispose();
     _phoneController.dispose();
     _menuNameController.dispose();
     _menuDescriptionController.dispose();
@@ -158,19 +205,11 @@ class _ShopProfileManagementScreenState
 
     setState(() {
       _selectedImageBytes = bytes;
-      _hasChanges = true;
     });
   }
 
   Future<Uint8List> _compressShopPhoto(Uint8List bytes) async {
-    final decoded = img.decodeImage(bytes);
-    if (decoded == null) return bytes;
-
-    final resized = decoded.width > 1400
-        ? img.copyResize(decoded, width: 1200)
-        : decoded;
-
-    return Uint8List.fromList(img.encodeJpg(resized, quality: 75));
+    return compute(_compressImageIsolate, bytes);
   }
 
   Future<String?> _uploadShopPhotoIfNeeded() async {
@@ -281,7 +320,6 @@ class _ShopProfileManagementScreenState
                       setState(() {
                         _selectedImageBytes = null;
                         _existingImageUrl = null;
-                        _hasChanges = true;
                       });
                     },
                     icon: const Icon(Icons.delete_outline),
@@ -323,6 +361,7 @@ class _ShopProfileManagementScreenState
         description: _descriptionController.text.trim(),
         priceRange: _priceRangeController.text.trim(),
         location: _locationController.text.trim(),
+        googleMapsUrl: _googleMapsUrlController.text.trim(),
         phone: _phoneController.text.trim(),
         imageUrls: imageUrls,
       );
@@ -334,18 +373,22 @@ class _ShopProfileManagementScreenState
             ? imageUrls.first
             : _existingImageUrl;
         _selectedImageBytes = null;
-        _hasChanges = true;
       });
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('Shop profile saved.')));
+      if (mounted) {
+        Navigator.of(context).pop(true);
+      }
     } on CloudinaryUploadException catch (e) {
       if (!mounted) return;
+      setState(() => _savingShop = false);
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(e.message)));
     } on TimeoutException {
       if (!mounted) return;
+      setState(() => _savingShop = false);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
@@ -355,13 +398,10 @@ class _ShopProfileManagementScreenState
       );
     } catch (_) {
       if (!mounted) return;
+      setState(() => _savingShop = false);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Failed to save shop profile.')),
       );
-    } finally {
-      if (mounted) {
-        setState(() => _savingShop = false);
-      }
     }
   }
 
@@ -392,7 +432,6 @@ class _ShopProfileManagementScreenState
       _menuNameController.clear();
       _menuDescriptionController.clear();
       _menuPriceController.clear();
-      _hasChanges = true;
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
@@ -457,29 +496,63 @@ class _ShopProfileManagementScreenState
       appBar: AppBar(
         backgroundColor: AppTheme.surface,
         title: const Text('Shop Profile Management'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(_hasChanges),
-            child: const Text('Done'),
-          ),
-          const SizedBox(width: 8),
-        ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 760),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _buildShopFormCard(),
-                const SizedBox(height: 16),
-                if (_shopId != null) _buildMenuCard(_shopId!),
-              ],
+      body: Column(
+        children: [
+          // Fixed photo picker at the top
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 760),
+                child: _buildPhotoPicker(),
+              ),
             ),
           ),
-        ),
+          // Scrollable content below
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 760),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _buildShopFormCard(),
+                      const SizedBox(height: 16),
+                      if (_shopId != null) _buildMenuCard(_shopId!),
+                      const SizedBox(height: 20),
+                      ElevatedButton.icon(
+                        onPressed:
+                            (!_savingShop &&
+                                _isShopFormValid &&
+                                _formHasChanged)
+                            ? _saveShop
+                            : null,
+                        style: _compactPrimaryButtonStyle,
+                        icon: _savingShop
+                            ? const SizedBox(
+                                height: 16,
+                                width: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Icon(Icons.save_rounded),
+                        label: Text(
+                          _savingShop ? 'Saving...' : 'Save Shop Profile',
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -498,8 +571,6 @@ class _ShopProfileManagementScreenState
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _buildPhotoPicker(),
-            const SizedBox(height: 12),
             Text('Shop Info', style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 10),
             TextFormField(
@@ -552,6 +623,16 @@ class _ShopProfileManagementScreenState
             ),
             const SizedBox(height: 10),
             TextFormField(
+              controller: _googleMapsUrlController,
+              decoration: _compactInputDecoration(
+                'Google Maps URL (optional)',
+                hint:
+                    'https://maps.app.goo.gl/... or https://www.google.com/maps/...',
+              ),
+              keyboardType: TextInputType.url,
+            ),
+            const SizedBox(height: 10),
+            TextFormField(
               controller: _phoneController,
               keyboardType: TextInputType.phone,
               decoration: _compactInputDecoration('Phone number'),
@@ -569,22 +650,6 @@ class _ShopProfileManagementScreenState
                   ),
                 ),
               ),
-            const SizedBox(height: 12),
-            ElevatedButton.icon(
-              onPressed: (!_savingShop && _isShopFormValid) ? _saveShop : null,
-              style: _compactPrimaryButtonStyle,
-              icon: _savingShop
-                  ? const SizedBox(
-                      height: 16,
-                      width: 16,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
-                      ),
-                    )
-                  : const Icon(Icons.save_rounded),
-              label: Text(_savingShop ? 'Saving...' : 'Save Shop Profile'),
-            ),
           ],
         ),
       ),

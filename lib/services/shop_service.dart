@@ -23,13 +23,16 @@ class ShopService {
     required String location,
     required String phone,
     required List<String> imageUrls,
+    String googleMapsUrl = '',
   }) async {
     final existing = await _shops
         .where('merchantId', isEqualTo: merchantId)
         .limit(1)
         .get();
 
-    final shopRef = existing.docs.isEmpty ? _shops.doc(merchantId) : _shops.doc(existing.docs.first.id);
+    final shopRef = existing.docs.isEmpty
+        ? _shops.doc(merchantId)
+        : _shops.doc(existing.docs.first.id);
 
     final payload = <String, dynamic>{
       'merchantId': merchantId,
@@ -39,6 +42,7 @@ class ShopService {
       'priceRange': priceRange,
       'location': location,
       'phone': phone,
+      'googleMapsUrl': googleMapsUrl,
       'imageUrls': imageUrls,
       'rating': 0.0,
       'updatedAt': FieldValue.serverTimestamp(),
@@ -46,10 +50,7 @@ class ShopService {
 
     await shopRef.set(
       existing.docs.isEmpty
-          ? {
-              ...payload,
-              'createdAt': FieldValue.serverTimestamp(),
-            }
+          ? {...payload, 'createdAt': FieldValue.serverTimestamp()}
           : payload,
       SetOptions(merge: true),
     );
@@ -63,7 +64,10 @@ class ShopService {
       return _shopFromDoc(directDoc);
     }
 
-    final result = await _shops.where('merchantId', isEqualTo: merchantId).limit(1).get();
+    final result = await _shops
+        .where('merchantId', isEqualTo: merchantId)
+        .limit(1)
+        .get();
     if (result.docs.isEmpty) return null;
 
     final doc = result.docs.first;
@@ -78,9 +82,9 @@ class ShopService {
   }
 
   static Stream<List<Shop>> streamAllShops() {
-    return _shops
-        .snapshots()
-        .map((query) => query.docs.map(_shopFromDoc).toList());
+    return _shops.snapshots().map(
+      (query) => query.docs.map(_shopFromDoc).toList(),
+    );
   }
 
   static Stream<List<MenuItem>> streamMenuItems(String shopId) {
@@ -111,15 +115,38 @@ class ShopService {
     return _menuRef(shopId).doc(menuItemId).delete();
   }
 
-  static Shop _shopFromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
-    final data = doc.data();
-    return Shop.fromJson({
-      'id': doc.id,
-      ...?data,
-    });
+  static Future<void> deleteMerchantData(String merchantId) async {
+    final ids = <String>{};
+
+    final directDoc = await _shops.doc(merchantId).get();
+    if (directDoc.exists) {
+      ids.add(directDoc.id);
+    }
+
+    final byMerchant = await _shops
+        .where('merchantId', isEqualTo: merchantId)
+        .get();
+    for (final doc in byMerchant.docs) {
+      ids.add(doc.id);
+    }
+
+    for (final shopId in ids) {
+      final menuSnapshot = await _menuRef(shopId).get();
+      for (final menuDoc in menuSnapshot.docs) {
+        await menuDoc.reference.delete();
+      }
+      await _shops.doc(shopId).delete();
+    }
   }
 
-  static MenuItem _menuItemFromDoc(QueryDocumentSnapshot<Map<String, dynamic>> doc) {
+  static Shop _shopFromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
+    final data = doc.data();
+    return Shop.fromJson({'id': doc.id, ...?data});
+  }
+
+  static MenuItem _menuItemFromDoc(
+    QueryDocumentSnapshot<Map<String, dynamic>> doc,
+  ) {
     final data = doc.data();
     return MenuItem(
       id: doc.id,

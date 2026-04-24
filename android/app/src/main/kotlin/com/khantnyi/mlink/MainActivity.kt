@@ -1,4 +1,4 @@
-package com.example.m_link_project
+package com.khantnyi.mlink
 
 import io.flutter.embedding.android.FlutterActivity
 

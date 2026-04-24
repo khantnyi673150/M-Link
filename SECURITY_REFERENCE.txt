@@ -1,0 +1,51 @@
+⚠️ SECURITY REFERENCE - Keep This Handy
+=========================================
+
+CRITICAL FILES - BACKUP IMMEDIATELY
+===========================================
+Location: android/
+- release.keystore (4.2 KB) - Signing certificate
+- key.properties (92 B) - Credentials
+
+BACKUP COMMAND
+===============
+tar czf - android/app/release.keystore android/key.properties | \
+  gpg --symmetric --cipher-algo AES256 --output ~/Desktop/mlink-keystore-backup.tar.gz.gpg
+
+KEYSTORE PASSWORDS & INFO
+===========================
+🔐 Keystore Password: <stored in password manager>
+🔐 Key Password: <stored in password manager>
+📦 Alias: release
+🎯 Package: com.khantnyi.mlink
+⏰ Valid Until: 2056 (30 years)
+🔑 Algorithm: RSA-4096
+
+GIT PROTECTION
+===============
+✅ key.properties - Ignored (android/.gitignore:12)
+✅ *.keystore - Ignored (android/.gitignore:13)
+✅ Safe to commit everything else
+
+DO THIS NOW
+============
+1. Encrypt and backup both files to external drive
+2. Store backup passwords in password manager
+3. Test restore process to verify backup works
+4. Never share these files or commit to Git
+
+NEVER DO THIS
+==============
+❌ Don't commit to GitHub/GitLab/GitBucket
+❌ Don't share with team (except in encrypted channel)
+❌ Don't store passwords in plaintext files
+❌ Don't lose the keystore without backup
+❌ Don't regenerate without updating Play Store
+
+RESTORE FROM BACKUP
+====================
+gpg --decrypt mlink-keystore-backup.tar.gz.gpg > backup.tar.gz
+tar xzf backup.tar.gz
+# Files go to: android/app/release.keystore, android/key.properties
+
+For full instructions, see: KEYSTORE_BACKUP_INSTRUCTIONS.md

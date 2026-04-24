@@ -4,7 +4,6 @@ import '../../core/utils/responsive.dart';
 import '../../models/shop_model.dart';
 import '../../services/auth_service.dart';
 import '../../services/shop_service.dart';
-import '../auth/role_selector_screen.dart';
 import '../shop_management/shop_profile_management_screen.dart';
 
 class MerchantDashboardScreen extends StatefulWidget {
@@ -18,6 +17,7 @@ class MerchantDashboardScreen extends StatefulWidget {
 class _MerchantDashboardScreenState extends State<MerchantDashboardScreen> {
   Shop? _currentShop;
   bool _isLoading = true;
+  bool _isDeletingAccount = false;
 
   @override
   void initState() {
@@ -59,11 +59,147 @@ class _MerchantDashboardScreenState extends State<MerchantDashboardScreen> {
     _goToRoleSelector();
   }
 
-  void _goToRoleSelector() {
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (context) => const RoleSelectorScreen()),
-      (route) => false,
+  Future<void> _deleteAccount() async {
+    final user = AuthService.currentUser;
+    if (user == null) {
+      _goToRoleSelector();
+      return;
+    }
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Merchant Account?'),
+        content: const Text(
+          'This will permanently remove your account, shop profile, and menu items. This action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
     );
+
+    if (confirmed != true) return;
+
+    final email = user.email;
+    if (email == null || email.isEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Missing account email. Please log in again.'),
+        ),
+      );
+      return;
+    }
+
+    final password = await _askPasswordForDeletion();
+    if (password == null || password.isEmpty) return;
+
+    if (!mounted) return;
+    setState(() => _isDeletingAccount = true);
+    try {
+      await AuthService.reauthenticateCurrentUser(
+        email: email,
+        password: password,
+      );
+      await ShopService.deleteMerchantData(user.uid);
+      await AuthService.deleteCurrentUser();
+
+      if (!mounted) return;
+      _goToRoleSelector();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_mapDeleteAccountError(e))),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isDeletingAccount = false);
+      }
+    }
+  }
+
+  Future<String?> _askPasswordForDeletion() async {
+    final controller = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+    var obscure = true;
+
+    final result = await showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setLocalState) => AlertDialog(
+          title: const Text('Confirm Password'),
+          content: Form(
+            key: formKey,
+            child: TextFormField(
+              controller: controller,
+              obscureText: obscure,
+              autofocus: true,
+              decoration: InputDecoration(
+                labelText: 'Password',
+                suffixIcon: IconButton(
+                  onPressed: () => setLocalState(() => obscure = !obscure),
+                  icon: Icon(
+                    obscure ? Icons.visibility_off_rounded : Icons.visibility_rounded,
+                  ),
+                ),
+              ),
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Password is required';
+                }
+                return null;
+              },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () {
+                if (formKey.currentState?.validate() != true) return;
+                Navigator.of(context).pop(controller.text);
+              },
+              child: const Text('Continue'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    controller.dispose();
+    return result;
+  }
+
+  String _mapDeleteAccountError(Object error) {
+    final message = error.toString().toLowerCase();
+    if (message.contains('wrong-password') ||
+        message.contains('invalid-credential')) {
+      return 'Incorrect password. Please try again.';
+    }
+    if (message.contains('requires-recent-login')) {
+      return 'Please log in again and retry deletion.';
+    }
+    return 'Unable to delete account right now. Please try again.';
+  }
+
+  void _goToRoleSelector() {
+    if (!mounted) return;
+    final navigator = Navigator.of(context);
+    if (navigator.canPop()) {
+      navigator.pop();
+    }
   }
 
   Future<void> _createOrEditShop() async {
@@ -154,6 +290,20 @@ class _MerchantDashboardScreenState extends State<MerchantDashboardScreen> {
         ],
       ),
       actions: [
+        TextButton.icon(
+          onPressed: _isDeletingAccount ? null : _deleteAccount,
+          icon: _isDeletingAccount
+              ? const SizedBox(
+                  width: 14,
+                  height: 14,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Icon(Icons.delete_forever_rounded, size: 18),
+          label: Text(_isDeletingAccount ? 'Deleting...' : 'Delete Account'),
+          style: TextButton.styleFrom(
+            foregroundColor: Colors.red,
+          ),
+        ),
         TextButton.icon(
           onPressed: _logout,
           icon: const Icon(Icons.logout_rounded, size: 18),

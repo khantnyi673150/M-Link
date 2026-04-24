@@ -5,7 +5,6 @@ class ShopInfoSection extends StatelessWidget {
   final String category;
   final double rating;
   final String description;
-  final String location;
 
   const ShopInfoSection({
     super.key,
@@ -13,7 +12,6 @@ class ShopInfoSection extends StatelessWidget {
     required this.category,
     required this.rating,
     required this.description,
-    required this.location,
   });
 
   @override
@@ -35,23 +33,6 @@ class ShopInfoSection extends StatelessWidget {
         children: [
           // ── Name ──────────────────────────────────────────────
           Text(name, style: tt.headlineMedium),
-          const SizedBox(height: 8),
-
-          // ── Location row ──────────────────────────────────────
-          Row(
-            children: [
-              Icon(Icons.location_on_outlined, size: 16, color: cs.onSurfaceVariant),
-              const SizedBox(width: 4),
-              Expanded(
-                child: Text(
-                  location,
-                  style: tt.bodyMedium,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
-          ),
           const SizedBox(height: 12),
 
           // ── Category & Rating row ─────────────────────────────
